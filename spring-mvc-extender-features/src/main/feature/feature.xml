@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<features xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  name="spring-mvc-extender-${project.version}"
+  xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
+  xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0">
+  <feature name="spring-mvc-extender-common" version="${project.version}">
+    <bundle>mvn:${project.groupId}/spring-mvc-extender-api/${project.version}</bundle>
+  </feature>
+  <feature name="spring-mvc-extender" description="Spring Mvc OSGI Extender Features"
+    version="${project.version}">
+    <details>Spring Mvc OSGI Extender Features</details>
+    <feature version="${project.version}">spring-mvc-extender-common</feature>
+    <feature prerequisite="true">http-whiteboard</feature>
+    <feature prerequisite="true">spring</feature>
+    <feature>spring-aspects</feature>
+    <feature>spring-jdbc</feature>
+    <feature>spring-jms</feature>
+    <feature>spring-messaging</feature>
+    <feature>spring-orm</feature>
+    <feature>spring-oxm</feature>
+    <feature>spring-tx</feature>
+    <feature prerequisite="true">spring-web</feature>
+    <feature>spring-websocket</feature>
+    <feature>spring-security</feature>
+    <feature>jackson</feature>
+    <bundle dependency="true">
+      mvn:org.eclipse.gemini.blueprint/gemini-blueprint-io/3.0.0.M01
+    </bundle>
+    <bundle>mvn:${project.groupId}/spring-mvc-extender/${project.version}</bundle>
+  </feature>
+  <feature name="spring-mvc-extender-command" version="${project.version}">
+    <feature version="${project.version}">spring-mvc-extender-common</feature>
+    <conditional>
+      <condition>shell</condition>
+      <bundle>mvn:${project.groupId}/spring-mvc-extender-command/${project.version}</bundle>
+    </conditional>
+  </feature>
+</features>

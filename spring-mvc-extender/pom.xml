@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>cn.qian.osgi</groupId>
+    <artifactId>spring-mvc-extender-parent</artifactId>
+    <version>${revision}</version>
+  </parent>
+
+  <artifactId>spring-mvc-extender</artifactId>
+
+  <name>Spring Mvc OSGI Extender</name>
+  <description>Spring Mvc OSGI Extender</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>cn.qian.osgi</groupId>
+      <artifactId>spring-mvc-extender-api</artifactId>
+      <version>${revision}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <version>6.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.http.whiteboard</artifactId>
+      <version>1.1.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.gemini.blueprint</groupId>
+      <artifactId>gemini-blueprint-io</artifactId>
+      <version>3.0.0.M01</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>${spring.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.6.0</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>
+              ${project.groupId}.${project.artifactId}
+            </Bundle-SymbolicName>
+            <Bundle-Activator>cn.qian.osgi.spring.extender.Activator</Bundle-Activator>
+            <Bundle-Name>${project.name}</Bundle-Name>
+            <Bundle-Version>${project.version}</Bundle-Version>
+            <Export-Package>!*</Export-Package>
+            <Import-Package>
+              javax.servlet;version=!,
+              javax.servlet.http;version=!,
+              org.osgi.framework;version=!,
+              org.osgi.framework.wiring;version=!,
+              org.osgi.service.http.context;version=!,
+              org.slf4j;version=!,
+              *
+            </Import-Package>
+            <_noee>true</_noee>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
