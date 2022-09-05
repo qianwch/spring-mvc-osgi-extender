@@ -36,7 +36,5 @@ public interface SpringMvcConfigurationManager {
 
   Collection<ConfigurableApplicationContext> listSpringContexts();
 
-  Collection<ConfigurableApplicationContext> listSpringContexts(ServletContext servletContext);
-
   Collection<ServletContext> listServletContexts();
 }

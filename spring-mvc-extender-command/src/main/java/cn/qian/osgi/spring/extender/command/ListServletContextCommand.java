@@ -18,23 +18,23 @@ package cn.qian.osgi.spring.extender.command;
 
 import cn.qian.osgi.spring.extender.api.SpringMvcConfigurationManager;
 import java.util.Collection;
+import javax.servlet.ServletContext;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
-import org.springframework.context.ConfigurableApplicationContext;
 
 @Service
-@Command(scope = "spring", name = "list", description = "List Spring Mvc Contexts")
-public class ListCommand implements Action {
+@Command(scope = "spring", name = "list-servlet-contexts", description = "List Spring Mvc Servlet Contexts")
+public class ListServletContextCommand implements Action {
   @Reference
   private SpringMvcConfigurationManager springMvcConfigurationManager;
 
   @Override
   public Object execute() {
-    Collection<ConfigurableApplicationContext>
-      contexts = springMvcConfigurationManager.listSpringContexts();
-    contexts.forEach(c -> System.out.println(c.getDisplayName()));
+    Collection<ServletContext>
+      contexts = springMvcConfigurationManager.listServletContexts();
+    contexts.forEach(c -> System.out.println(c.getServletContextName()));
     return null;
   }
 }

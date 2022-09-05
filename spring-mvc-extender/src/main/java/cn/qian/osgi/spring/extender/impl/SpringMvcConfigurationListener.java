@@ -22,15 +22,20 @@ import org.osgi.framework.SynchronousBundleListener;
 
 public class SpringMvcConfigurationListener implements SynchronousBundleListener {
   private final SpringMvcConfigurationManager springMvcConfigurationManager;
+  private final ServletContextManager servletContextManager;
 
-  public SpringMvcConfigurationListener(
-    SpringMvcConfigurationManager springMvcConfigurationManager) {
+  public SpringMvcConfigurationListener(SpringMvcConfigurationManager springMvcConfigurationManager,
+      ServletContextManager servletContextManager) {
     this.springMvcConfigurationManager = springMvcConfigurationManager;
+    this.servletContextManager = servletContextManager;
   }
 
   @Override
   public void bundleChanged(BundleEvent bundleEvent) {
     switch (bundleEvent.getType()) {
+      case BundleEvent.INSTALLED:
+        servletContextManager.scanBundleForServletContext(bundleEvent.getBundle());
+        break;
       case BundleEvent.STARTED:
         springMvcConfigurationManager.createSpringMvcConfig(bundleEvent.getBundle());
         break;

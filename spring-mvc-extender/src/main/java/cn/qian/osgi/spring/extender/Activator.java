@@ -17,23 +17,33 @@
 package cn.qian.osgi.spring.extender;
 
 import cn.qian.osgi.spring.extender.api.SpringMvcConfigurationManager;
+import cn.qian.osgi.spring.extender.impl.ServletContextManager;
 import cn.qian.osgi.spring.extender.impl.SpringMvcConfigurationListener;
 import cn.qian.osgi.spring.extender.impl.SpringMvcConfigurationManagerImpl;
 import java.util.Hashtable;
+import javax.servlet.ServletContext;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.util.tracker.ServiceTracker;
 
 public class Activator implements BundleActivator {
   private SpringMvcConfigurationListener configurationListener;
+  private ServletContextManager servletContextManager;
+  private SpringMvcConfigurationManager springMvcConfigurationManager;
+  private ServiceTracker<ServletContext, ServletContext> serviceTracker;
 
   @Override
   public void start(BundleContext bundleContext) {
-    SpringMvcConfigurationManagerImpl mvcApplicationContextManager =
-      new SpringMvcConfigurationManagerImpl(bundleContext.getBundle());
-    mvcApplicationContextManager.scanAndLoadSpringMvcConfigs();
-    bundleContext.registerService(SpringMvcConfigurationManager.class,
-      mvcApplicationContextManager, new Hashtable<>());
-    configurationListener = new SpringMvcConfigurationListener(mvcApplicationContextManager);
+    servletContextManager = new ServletContextManager(bundleContext);
+    serviceTracker = new ServiceTracker<>(bundleContext, ServletContext.class, servletContextManager);
+    serviceTracker.open();
+    springMvcConfigurationManager =
+        new SpringMvcConfigurationManagerImpl(bundleContext, servletContextManager);
+    bundleContext.registerService(SpringMvcConfigurationManager.class, springMvcConfigurationManager,
+        new Hashtable<>());
+    springMvcConfigurationManager.scanAndLoadSpringMvcConfigs();
+    configurationListener =
+        new SpringMvcConfigurationListener(springMvcConfigurationManager, servletContextManager);
     bundleContext.addBundleListener(configurationListener);
   }
 
@@ -43,5 +53,13 @@ public class Activator implements BundleActivator {
       bundleContext.removeBundleListener(configurationListener);
     }
     configurationListener = null;
+    if (servletContextManager != null) {
+      servletContextManager.shutdown();
+      servletContextManager = null;
+    }
+    springMvcConfigurationManager = null;
+    if (serviceTracker != null) {
+      serviceTracker.close();
+    }
   }
 }
