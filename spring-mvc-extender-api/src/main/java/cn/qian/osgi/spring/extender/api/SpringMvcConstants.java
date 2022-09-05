@@ -26,11 +26,11 @@ public class SpringMvcConstants {
   public static final String CONTEXT_XML_LOCATIONS = "Spring-Context-Xml-Locations";
   public static final String EXTENDER_NAME = "cn.qian.osgi.spring.extender";
   public static final String CONTEXT_NAME_PREFIX =
-      SpringMvcConstants.EXTENDER_NAME + ".spring.context";
+      SpringMvcConstants.EXTENDER_NAME + ".spring.context.";
   public static final String ROOT_CONTEXT_NAME_PREFIX =
-    SpringMvcConstants.EXTENDER_NAME + ".spring.rootContext";
+    SpringMvcConstants.EXTENDER_NAME + ".spring.root-context.";
   public static final String SERVLET_CONTEXT_NAME_PREFIX =
-    SpringMvcConstants.EXTENDER_NAME + ".servlet.context";
+    SpringMvcConstants.EXTENDER_NAME + ".servlet.context.";
   public static final String DISPATCHER_NAME_PREFIX =
-    SpringMvcConstants.EXTENDER_NAME + ".dispatcher.servlet";
+    SpringMvcConstants.EXTENDER_NAME + ".dispatcher.servlet.";
 }

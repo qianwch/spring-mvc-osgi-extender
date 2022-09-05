@@ -5,12 +5,6 @@
   xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
   xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0">
   <feature name="spring-mvc-extender-common" version="${project.version}">
-    <bundle>mvn:${project.groupId}/spring-mvc-extender-api/${project.version}</bundle>
-  </feature>
-  <feature name="spring-mvc-extender" description="Spring Mvc OSGI Extender Features"
-    version="${project.version}">
-    <details>Spring Mvc OSGI Extender Features</details>
-    <feature version="${project.version}">spring-mvc-extender-common</feature>
     <feature prerequisite="true">http-whiteboard</feature>
     <feature prerequisite="true">spring</feature>
     <feature>spring-aspects</feature>
@@ -24,6 +18,12 @@
     <feature>spring-websocket</feature>
     <feature>spring-security</feature>
     <feature>jackson</feature>
+    <bundle>mvn:${project.groupId}/spring-mvc-extender-api/${project.version}</bundle>
+  </feature>
+  <feature name="spring-mvc-extender" description="Spring Mvc OSGI Extender Features"
+    version="${project.version}">
+    <details>Spring Mvc OSGI Extender Features</details>
+    <feature version="${project.version}">spring-mvc-extender-common</feature>
     <bundle dependency="true">
       mvn:org.eclipse.gemini.blueprint/gemini-blueprint-io/3.0.0.M01
     </bundle>

@@ -1,6 +1,6 @@
 # What is it, and what can it do?
 
-It is an extender-bundle which is triggered by the bundle events.  
+It is an osgi-extender-bundle which is triggered by the bundle events.  
 Bundles which contains spring mvc configurations could be plugged into osgi http whiteboard, the
 extender will:
 
@@ -28,7 +28,7 @@ released by servicemix.
 Spring-DM has been donated to Eclipse, now it
 is [Eclipse Gemini](https://www.eclipse.org/gemini/blueprint/documentation/reference/3.0.0.M01/html-single/index.html)
 .  
-Both of them only support xml-config. Nowadays annotation config is preferred.
+Both of them only support xml-config. Nowadays annotation config is preferred. And it is not a simple work to get spring mvc running up.
 
 # Prerequisite
 
@@ -48,6 +48,8 @@ mvn clean package install
 # Install the features to karaf
 feature:repo-add mvn:cn.qian.osgi/spring-mvc-extender-features/LATEST/xml/features
 feature:install spring-mvc-extender
+# Optional
+feature:install spring-mvc-extender-command
 ```
 
 # How to use?
@@ -79,8 +81,7 @@ You could add the bundler headers to maven-bundle-plugin config, like this:
     <instructions>
       <Spring-Mvc-Enabled>true</Spring-Mvc-Enabled>
       <Spring-Mvc-Url-Pattern>/mvc1/*</Spring-Mvc-Url-Pattern>
-      <Spring-Context-Config-Classes>cn.qian.osgi.demo1.config.MvcConfiguration
-      </Spring-Context-Config-Classes>
+      <Spring-Context-Config-Classes>cn.qian.osgi.demo1.config.MvcConfiguration</Spring-Context-Config-Classes>
       <Export-Package>!*</Export-Package>
       <Import-Package>
         org.springframework.beans.factory.config,
@@ -119,4 +120,12 @@ You could add the bundler headers to maven-bundle-plugin config, like this:
 
 Spring framework heavily uses dynamic class loading. As you have seen, spring packages need to be
 specified manually.  
-Please check the example project. I will add more examples later.
+Please check the example project. I will add more examples later.  
+# Karaf Shell Commands
+Furthermore, the extender adds some karaf shell commands:
+* spring:scan
+  * Scan all bundles for spring mvc configs
+* spring:stop [-a] [bundleId]
+  * Stop spring mvc contexts. If "-a", all contexts will be shutdown. 
+* spring:list
+  * List running spring mvc contexts

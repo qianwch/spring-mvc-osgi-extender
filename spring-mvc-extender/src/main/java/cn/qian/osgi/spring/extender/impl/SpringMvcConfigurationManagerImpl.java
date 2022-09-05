@@ -93,12 +93,17 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
           (ServiceRegistration<ServletContext>) servletContext.getAttribute(
             getServletContextName(bnd));
         if (servletContextReg != null && !servletContextInUse(servletContext)) {
-          log.info("Removing Servlet Context: {} ...", getServletContextName(bnd));
-          servletContextReg.unregister();
-          servletContext.removeAttribute(getServletContextName(bnd));
+          destroyServletContext(bnd, servletContext, servletContextReg);
         }
       }
     }
+  }
+
+  private synchronized void destroyServletContext(Bundle bnd, ServletContext servletContext,
+      ServiceRegistration<ServletContext> servletContextReg) {
+    servletContext.removeAttribute(getServletContextName(bnd));
+    log.info("Removing Servlet Context: {} ...", getServletContextName(bnd));
+    servletContextReg.unregister();
   }
 
   private boolean servletContextInUse(ServletContext context) {
@@ -148,26 +153,26 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
   }
 
   private String getSpringContextName(Bundle bnd) {
-    return SpringMvcConstants.CONTEXT_NAME_PREFIX + "/" + bnd.getSymbolicName();
+    return SpringMvcConstants.CONTEXT_NAME_PREFIX + bnd.getSymbolicName();
   }
 
   private String getSpringRootContextName(Bundle bnd) {
-    return SpringMvcConstants.ROOT_CONTEXT_NAME_PREFIX + "/" + bnd.getSymbolicName();
+    return SpringMvcConstants.ROOT_CONTEXT_NAME_PREFIX + bnd.getSymbolicName();
   }
 
   private String getServletContextName(Bundle bnd) {
-    return SpringMvcConstants.SERVLET_CONTEXT_NAME_PREFIX + "/" + bnd.getSymbolicName();
+    return SpringMvcConstants.SERVLET_CONTEXT_NAME_PREFIX + bnd.getSymbolicName();
   }
 
   private String getDispatcherName(Bundle bnd) {
-    return SpringMvcConstants.DISPATCHER_NAME_PREFIX + "/" + bnd.getSymbolicName();
+    return SpringMvcConstants.DISPATCHER_NAME_PREFIX + bnd.getSymbolicName();
   }
 
   private boolean mvcEnabled(Bundle bnd) {
     return Boolean.parseBoolean(bnd.getHeaders().get(SpringMvcConstants.ENABLED));
   }
 
-  private ServletContext getOrCreateServletContext(Bundle bnd, boolean autoCreate) {
+  private synchronized ServletContext getOrCreateServletContext(Bundle bnd, boolean waitForReady) {
     BundleContext bndCtx = bnd.getBundleContext();
     String ctxPath = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_ROOT);
     if (ctxPath == null) {
@@ -177,7 +182,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     }
 
     Collection<ServiceReference<ServletContext>> serviceReferences = Collections.EMPTY_LIST;
-    boolean creating = false;
+    boolean waiting = false;
     ServiceRegistration<ServletContextHelper> registration = null;
     do {
       try {
@@ -186,8 +191,8 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       } catch (Exception e) {
         log.error("Unexpected", e);
       }
-      if (serviceReferences.size() == 0 && autoCreate) {
-        if (!creating) {
+      if (serviceReferences.size() == 0 && waitForReady) {
+        if (!waiting) {
           if (!"/".equals(ctxPath)) {
             Dictionary<String, String> props = new Hashtable<>();
             props.put(HTTP_WHITEBOARD_CONTEXT_NAME, getServletContextName(bnd));
@@ -198,7 +203,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
               }, props);
             log.info("Trying to create ServletContext: {}", ctxPath);
           }
-          creating = true;
+          waiting = true;
         } else {
           try {
             log.info("Waiting for ServletContext({}) to become ready....", ctxPath);
@@ -208,7 +213,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
           }
         }
       }
-    } while (serviceReferences.size() == 0 && autoCreate);
+    } while (serviceReferences.size() == 0 && waitForReady);
     if (serviceReferences.size() == 0) {
       return null;
     }
@@ -388,18 +393,23 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
   public Collection<ServletContext> listServletContexts() {
     Set<ServletContext> servletContexts = new HashSet<>();
     BundleContext bndCtx = extenderBundle.getBundleContext();
-    Collection<ServiceReference<Servlet>> serviceReferences = Collections.EMPTY_LIST;
+    Collection<ServiceReference<ServletContext>> serviceReferences = Collections.EMPTY_LIST;
     try {
       serviceReferences =
-        bndCtx.getServiceReferences(Servlet.class,
-          String.format("(%s=true)", SpringMvcConstants.EXTENDER_NAME));
+        bndCtx.getServiceReferences(ServletContext.class, null);
     } catch (InvalidSyntaxException e) {
       log.error("Unexpected Exception", e);
     }
     serviceReferences.forEach(sr -> {
-      Servlet servlet = bndCtx.getService(sr);
-      ServletContext servletContext = servlet.getServletConfig().getServletContext();
-      servletContexts.add(servletContext);
+      ServletContext servletContext = bndCtx.getService(sr);
+      Enumeration<String> names = servletContext.getAttributeNames();
+      while (names.hasMoreElements()) {
+        String name = names.nextElement();
+        if (name.startsWith(SpringMvcConstants.DISPATCHER_NAME_PREFIX)) {
+          servletContexts.add(servletContext);
+          break;
+        }
+      }
     });
     return servletContexts;
   }
