@@ -159,6 +159,7 @@ public class ServletContextManager
     BundleContext bndCtx = reference.getBundle().getBundleContext();
     ServletContext servletContext = bndCtx.getService(reference);
     String contextPath = normalizeCtxPath(servletContext.getContextPath());
+    log.info("ServletContext {} is now starting up......", contextPath);
     if ("/".equals(contextPath)) {
       httpWhiteBoardCtx = bndCtx;
       servletContextMonitor = new Thread(() -> {
@@ -225,6 +226,7 @@ public class ServletContextManager
     BundleContext bndCtx = reference.getBundle().getBundleContext();
     ServletContext servletContext = bndCtx.getService(reference);
     String ctxPath = normalizeCtxPath(servletContext.getContextPath());
+    log.info("ServletContext {} is now shutting down......", ctxPath);
     if ("/".equals(ctxPath)) {
       servletContextMonitor.interrupt();
       servletContextMonitor = null;
