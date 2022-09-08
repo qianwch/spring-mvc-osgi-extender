@@ -29,7 +29,7 @@ public class ScanCommand implements Action {
   private SpringMvcConfigurationManager springMvcConfigurationManager;
 
   @Override
-  public Object execute() throws Exception {
+  public Object execute() {
     springMvcConfigurationManager.scanAndLoadSpringMvcConfigs();
     return null;
   }

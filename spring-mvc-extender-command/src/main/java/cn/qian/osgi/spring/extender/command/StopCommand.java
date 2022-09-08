@@ -28,18 +28,19 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 @Service
 @Command(scope = "spring", name = "stop", description = "Stop Spring Mvc Contexts")
 public class StopCommand implements Action {
-  @Option(name = "-a", aliases = "--all", description = "Remove All Spring MVC Contexts", required = false)
+  @Option(name = "-a", aliases = "--all", description = "Remove All Spring MVC Contexts")
   boolean stopAll;
-  @Argument(index = 0, name = "bunldId", description = "Bundle ID", required = false, multiValued = true)
+  @Argument(name = "bundleId", description = "Bundle ID",
+      multiValued = true)
   List<Long> bundleIds;
   @Reference
   private SpringMvcConfigurationManager springMvcConfigurationManager;
 
   @Override
-  public Object execute() throws Exception {
+  public Object execute() {
     if (stopAll) {
       springMvcConfigurationManager.destroyAllSpringMvcConfigs();
-    } else {
+    } else if (bundleIds != null) {
       bundleIds.forEach(springMvcConfigurationManager::destroySpringMvcConfig);
     }
     return null;

@@ -27,13 +27,13 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 @Service
 @Command(scope = "spring", name = "create", description = "Create Spring Mvc Context for bundle")
 public class CreateCommand implements Action {
-  @Argument(index = 0, name = "bunldId", description = "Bundle ID", required = true, multiValued = true)
+  @Argument(name = "bunldId", description = "Bundle ID", required = true, multiValued = true)
   List<Long> bundleIds;
   @Reference
   private SpringMvcConfigurationManager springMvcConfigurationManager;
 
   @Override
-  public Object execute() throws Exception {
+  public Object execute() {
     bundleIds.forEach(springMvcConfigurationManager::createSpringMvcConfig);
     return null;
   }

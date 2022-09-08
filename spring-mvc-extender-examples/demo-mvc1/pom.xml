@@ -68,7 +68,7 @@
         <configuration>
           <instructions>
             <Spring-Mvc-Enabled>true</Spring-Mvc-Enabled>
-            <Spring-Mvc-Url-Pattern>/mvc1/*</Spring-Mvc-Url-Pattern>
+            <Spring-Mvc-Context-Path>/mvc1</Spring-Mvc-Context-Path>
             <Spring-Context-Config-Classes>cn.qian.osgi.demo1.config.MvcConfiguration
             </Spring-Context-Config-Classes>
             <Export-Package>!*</Export-Package>

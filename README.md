@@ -56,15 +56,15 @@ feature:install spring-mvc-extender-command
 
 The extender will use some Bundle Headers to get spring mvc configured:
 
-| Header                             | Default Value | Required | Description                                                                                                                                            |
-|------------------------------------|---------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Spring-Mvc-Enabled                 | -             | Yes      | Must set to true                                                                                                                                       | 
-| Spring-Mvc-Context-Path            | /             | No       | The ServletContext Path for spring mvc app. If not set, the default context(/) is used. If the servlet context does not exist yet, it will be created. |
-| Spring-Mvc-Url-Pattern             | /*            | No       | The url-pattern for dispatcher servlet. You would like to set unique pattern for each bundles within the same servlet context.                         |
-| Spring-Root-Context-Config-Classes | -             | No       | If you are using hierarchical spring context, you could specify the configuration full class names (separated by comma) for root spring context.       |
-| Spring-Context-Config-Classes      | -             | No       | Spring configuration full class names (separated by comma)                                                                                             |
-| Spring-Root-Context-Xml-Locations  | -             | No       | Xml configurations for root spring context. It is supported but not preferred.                                                                         |
-| Spring-Context-Xml-Locations       | -             | No       | Xml configurations for spring context. It is supported but not preferred.                                                                              |
+| Header                             | Default Value | Required | Description                                                                                                                                                                                                        |
+|------------------------------------|---------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Spring-Mvc-Enabled                 | -             | Yes      | Must set to true                                                                                                                                                                                                   | 
+| Spring-Mvc-Context-Path            | /             | No       | The ServletContext Path for spring mvc app. If not set, the default context(/) is used. If the servlet context does not exist yet, it will be created. ServletContext path may be shared by more that one bundles. |
+| Spring-Mvc-Url-Pattern             | /*            | No       | The url-pattern for dispatcher servlet. You would like to set unique pattern for each bundles within the same servlet context.                                                                                     |
+| Spring-Root-Context-Config-Classes | -             | No       | If you are using hierarchical spring context, you could specify the configuration full class names (separated by comma) for root spring context.                                                                   |
+| Spring-Context-Config-Classes      | -             | No       | Spring configuration full class names (separated by comma)                                                                                                                                                         |
+| Spring-Root-Context-Xml-Locations  | -             | No       | Xml configurations for root spring context. It is supported but not preferred.                                                                                                                                     |
+| Spring-Context-Xml-Locations       | -             | No       | Xml configurations for spring context. It is supported but not preferred.                                                                                                                                          |
 
 If Spring-Mvc-Enabled is set to true and no spring configuration is set, the extender will try to
 load /META-INF/spring/*.xml.  

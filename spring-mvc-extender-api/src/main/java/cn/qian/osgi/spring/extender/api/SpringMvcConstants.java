@@ -29,8 +29,7 @@ public class SpringMvcConstants {
       SpringMvcConstants.EXTENDER_NAME + ".spring.context.";
   public static final String ROOT_CONTEXT_NAME_PREFIX =
     SpringMvcConstants.EXTENDER_NAME + ".spring.root-context.";
-  public static final String SERVLET_CONTEXT_NAME_PREFIX =
-    SpringMvcConstants.EXTENDER_NAME + ".servlet.context.";
   public static final String DISPATCHER_NAME_PREFIX =
     SpringMvcConstants.EXTENDER_NAME + ".dispatcher.servlet.";
+  public static final String BUNDLE_CONTEXT = "bundleContext";
 }
