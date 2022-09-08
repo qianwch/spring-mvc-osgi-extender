@@ -60,6 +60,7 @@ public class Activator implements BundleActivator {
     springMvcConfigurationManager = null;
     if (serviceTracker != null) {
       serviceTracker.close();
+      serviceTracker = null;
     }
   }
 }
