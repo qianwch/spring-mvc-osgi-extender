@@ -84,7 +84,6 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
           if (rootCtx != null) {
             log.info("Shutting down spring context: {} ...", rootCtx.getDisplayName());
             rootCtx.close();
-            appCtx.setParent(null);
           }
           log.info("Shutting down spring context: {} ...", appCtx.getDisplayName());
           appCtx.close();
