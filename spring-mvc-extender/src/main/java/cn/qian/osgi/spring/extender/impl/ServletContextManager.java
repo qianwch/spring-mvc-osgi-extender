@@ -1,13 +1,34 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package cn.qian.osgi.spring.extender.impl;
 
 import cn.qian.osgi.spring.extender.api.SpringMvcConstants;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,25 +50,49 @@ import static org.osgi.service.http.whiteboard.HttpWhiteboardConstants.HTTP_WHIT
 
 @SuppressWarnings({"unchecked", "SpellCheckingInspection"})
 public class ServletContextManager
-    implements ServiceTrackerCustomizer<ServletContext, ServletContext> {
+  implements ServiceTrackerCustomizer<ServletContext, ServletContext> {
   private volatile BundleContext httpWhiteBoardCtx;
   private final BundleContext extenderContext;
   private final Logger log = LoggerFactory.getLogger(ServletContextManager.class);
-  private ExecutorService executor = Executors.newCachedThreadPool();
-  private final BlockingQueue<Runnable> servletContextCreatingTasks = new LinkedBlockingQueue<>();
-
-  private final Map<String, ServletContext> servletContexts =
-      Collections.synchronizedMap(new HashMap<>());
+  private ExecutorService executor = Executors.newSingleThreadExecutor();
+  /**
+   * Task queue for ServletContexts that are available, except the servlet-context-creating tasks.
+   * The tasks are due to run now.
+   */
+  private final BlockingQueue<SimpleEntry<String, Runnable>> jobs = new LinkedBlockingQueue<>();
+  /**
+   * Available servlet contexts.
+   */
+  private final Set<String> servletContexts =
+    Collections.synchronizedSet(new HashSet<>());
   private final Map<String, ServiceRegistration<ServletContextHelper>> servletContextRegs =
-      Collections.synchronizedMap(new HashMap<>());
-  private final Map<String, BlockingQueue<Runnable>> servletContextTaskQs =
-      Collections.synchronizedMap(new HashMap<>());
-  private Map<String, Thread> servletContextTaskMonitors =
-      Collections.synchronizedMap(new HashMap<>());
-  private Thread servletContextMonitor;
+    Collections.synchronizedMap(new HashMap<>());
+  /**
+   * The tasks will not run until the serlvet contexts(key is context path) are available.
+   */
+  private final Map<String, List<Runnable>> servletContextTaskQs =
+    Collections.synchronizedMap(new HashMap<>());
+  private Thread jobWaitingThread;
 
   public ServletContextManager(BundleContext extenderContext) {
     this.extenderContext = extenderContext;
+    setupJobsWaitingThread();
+  }
+
+  private void setupJobsWaitingThread() {
+    jobWaitingThread = new Thread(() -> {
+      boolean interrupted = false;
+      while (!interrupted) {
+        try {
+          executor.execute(jobs.take().getValue());
+        } catch (InterruptedException e) {
+          interrupted = true;
+        }
+      }
+    }, ServletContextManager.class.getPackage().getName() + "-jobs");
+    jobWaitingThread.start();
+    //Scheule bundle scannning task
+    submitServletContextTask("/", this::scanBundlesForServletContexts);
   }
 
   public static String normalizeCtxPath(String ctxPath) {
@@ -65,7 +110,7 @@ public class ServletContextManager
   public void scanBundleForServletContext(Bundle bnd) {
     if ("true".equals(bnd.getHeaders().get(SpringMvcConstants.ENABLED))) {
       String ctxPath = normalizeCtxPath(bnd.getHeaders().get(SpringMvcConstants.CONTEXT_ROOT));
-      if (!servletContexts.containsKey(ctxPath)) {
+      if (!servletContexts.contains(ctxPath)) {
         createServletContext(ctxPath);
       }
     }
@@ -73,31 +118,29 @@ public class ServletContextManager
 
   public void scanBundlesForServletContexts() {
     Arrays.stream(extenderContext.getBundles())
-        .filter(bnd -> "true".equals(bnd.getHeaders().get(SpringMvcConstants.ENABLED)))
-        .map(bnd -> normalizeCtxPath(bnd.getHeaders().get(SpringMvcConstants.CONTEXT_ROOT)))
-        .collect(Collectors.toSet())
-        .forEach(p -> {
-          if (!servletContexts.containsKey(p)) {
-            createServletContext(p);
-          }
-        });
+      .filter(bnd -> "true".equals(bnd.getHeaders().get(SpringMvcConstants.ENABLED)))
+      .map(bnd -> normalizeCtxPath(bnd.getHeaders().get(SpringMvcConstants.CONTEXT_ROOT)))
+      .collect(Collectors.toSet())
+      .forEach(p -> {
+        if (!servletContexts.contains(p)) {
+          createServletContext(p);
+        }
+      });
   }
 
   private void createServletContext(String p) {
     Collection<ServiceReference<ServletContext>> serviceReferences = Collections.EMPTY_LIST;
     try {
       serviceReferences = extenderContext.getServiceReferences(ServletContext.class,
-          String.format("(osgi.web.contextpath=%s)", p));
+        String.format("(osgi.web.contextpath=%s)", p));
     } catch (InvalidSyntaxException e) {
       log.error("Unexpected", e);
     }
     if (serviceReferences.size() > 0) {
       ServiceReference<ServletContext> ref = serviceReferences.iterator().next();
-      servletContexts.put(p, extenderContext.getService(ref));
       extenderContext.ungetService(ref);
     } else if (!"".equals(p) && !"/".equals(p)) {
       doCreatingServletContext(p);
-      log.info("Trying to create ServletContext: {}", p);
     }
   }
 
@@ -106,27 +149,32 @@ public class ServletContextManager
       return;
     }
     Runnable task = () -> {
+      log.info("Trying to create ServletContext: {}", p);
       Dictionary<String, String> props = new Hashtable<>();
       props.put(HTTP_WHITEBOARD_CONTEXT_NAME, contextPathToName(p));
       props.put(HTTP_WHITEBOARD_CONTEXT_PATH, p);
       props.put(SpringMvcConstants.EXTENDER_NAME, "true");
       ServiceRegistration<ServletContextHelper> registration =
-          httpWhiteBoardCtx.registerService(ServletContextHelper.class, new ServletContextHelper() {
-          }, props);
+        httpWhiteBoardCtx.registerService(ServletContextHelper.class, new ServletContextHelper() {
+        }, props);
       servletContextRegs.put(p, registration);
     };
-    servletContextCreatingTasks.add(task);
+    // To create servlet contexts, we need to wait default context to be available.
+    submitServletContextTask("/", task);
   }
 
   public static String contextPathToName(String p) {
     return "http" + p.replace('/', '_');
   }
 
+  /**
+   * Get a bundle scoped ServletContext
+   */
   public ServletContext getServletContext(BundleContext bndCtx, String ctxPath) {
     Collection<ServiceReference<ServletContext>> serviceReferences = Collections.EMPTY_LIST;
     try {
       serviceReferences = bndCtx.getServiceReferences(ServletContext.class,
-          String.format("(osgi.web.contextpath=%s)", ctxPath));
+        String.format("(osgi.web.contextpath=%s)", ctxPath));
     } catch (InvalidSyntaxException e) {
       log.error("Unexpected", e);
     }
@@ -144,76 +192,52 @@ public class ServletContextManager
       executor.shutdownNow();
       executor = null;
     }
-    if (servletContextMonitor != null) {
-      servletContextMonitor.interrupt();
+    if (jobWaitingThread != null) {
+      jobWaitingThread.interrupt();
+      jobWaitingThread = null;
     }
-    if (servletContextTaskMonitors != null) {
-      servletContextTaskMonitors.values().forEach(Thread::interrupt);
-      servletContextTaskMonitors.clear();
-      servletContextTaskMonitors = null;
-    }
-  }
-
-  @Override
-  public ServletContext addingService(ServiceReference<ServletContext> reference) {
-    BundleContext bndCtx = reference.getBundle().getBundleContext();
-    ServletContext servletContext = bndCtx.getService(reference);
-    String contextPath = normalizeCtxPath(servletContext.getContextPath());
-    log.info("ServletContext {} is now starting up......", contextPath);
-    if ("/".equals(contextPath)) {
-      httpWhiteBoardCtx = bndCtx;
-      servletContextMonitor = new Thread(() -> {
-        boolean interrupted = false;
-        while (!interrupted) {
-          try {
-            Runnable task = servletContextCreatingTasks.take();
-            executor.execute(task);
-          } catch (InterruptedException ex) {
-            interrupted = true;
-          }
-        }
-      });
-      servletContextMonitor.setName(
-          ServletContextManager.class.getPackage().getName() + ".ServletContextCreator");
-      servletContextMonitor.start();
-      scanBundlesForServletContexts();
-    }
-    servletContexts.put(contextPath, servletContext);
-    initServletContextTaskQ(contextPath);
-    if (servletContextTaskMonitors.get(contextPath) == null) {
-      Thread contextTaskMonitor = new Thread(() -> {
-        boolean interrupted = false;
-        while (!interrupted) {
-          try {
-            Runnable task = servletContextTaskQs.get(contextPath).take();
-            executor.execute(task);
-          } catch (InterruptedException ex) {
-            interrupted = true;
-          }
-        }
-      });
-      contextTaskMonitor.setName(
-          ServletContextManager.class.getPackage().getName() + contextPath.replace('/', '_'));
-      servletContextTaskMonitors.put(contextPath, contextTaskMonitor);
-      contextTaskMonitor.start();
-    }
-    return servletContext;
   }
 
   private synchronized void initServletContextTaskQ(String contextPath) {
     if (servletContextTaskQs.get(contextPath) == null) {
-      BlockingQueue<Runnable> servletContextTasks = new LinkedBlockingQueue<>();
+      List<Runnable> servletContextTasks = new LinkedList<>();
       servletContextTaskQs.put(contextPath, servletContextTasks);
     }
   }
 
-  public void submitServletContextTask(String path, Runnable task) {
-    initServletContextTaskQ(path);
-    try {
-      servletContextTaskQs.get(path).put(task);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
+  /**
+   * submit a task which will run when the servlet context path is available
+   */
+  public synchronized void submitServletContextTask(String path, Runnable task) {
+    if (servletContexts.contains(path)) {
+      jobs.add(new SimpleEntry<>(path, task));
+    } else {
+      initServletContextTaskQ(path);
+      servletContextTaskQs.get(path).add(task);
     }
+  }
+
+  @Override
+  public synchronized ServletContext addingService(ServiceReference<ServletContext> reference) {
+    BundleContext bndCtx = reference.getBundle().getBundleContext();
+    ServletContext servletContext = bndCtx.getService(reference);
+    String contextPath = normalizeCtxPath(servletContext.getContextPath());
+    log.info("ServletContext {} is now starting up......", contextPath);
+    servletContexts.add(contextPath);
+    if ("/".equals(contextPath)) {
+      httpWhiteBoardCtx = bndCtx;
+    }
+    //Move the tasks from waiting queue to running queue
+    if (servletContextTaskQs.get(contextPath) != null) {
+      jobs.addAll(servletContextTaskQs.get(contextPath)
+        .stream()
+        .map((r) -> new SimpleEntry<>(contextPath, r))
+        .collect(
+          Collectors.toList()));
+      servletContextTaskQs.get(contextPath).clear();
+      servletContextTaskQs.remove(contextPath);
+    }
+    return servletContext;
   }
 
   @Override
@@ -222,18 +246,12 @@ public class ServletContextManager
   }
 
   @Override
-  public void removedService(ServiceReference<ServletContext> reference, ServletContext service) {
+  public synchronized void removedService(ServiceReference<ServletContext> reference,
+    ServletContext service) {
     BundleContext bndCtx = reference.getBundle().getBundleContext();
     ServletContext servletContext = bndCtx.getService(reference);
     String ctxPath = normalizeCtxPath(servletContext.getContextPath());
+    servletContexts.remove(ctxPath);
     log.info("ServletContext {} is now shutting down......", ctxPath);
-    if ("/".equals(ctxPath)) {
-      servletContextMonitor.interrupt();
-      servletContextMonitor = null;
-    }
-    if (servletContextTaskMonitors != null && servletContextTaskMonitors.get(ctxPath) != null) {
-      servletContextTaskMonitors.get(ctxPath).interrupt();
-      servletContextTaskMonitors.remove(ctxPath);
-    }
   }
 }
