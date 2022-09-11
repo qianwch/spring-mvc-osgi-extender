@@ -156,8 +156,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     if (appCtx == null) {
       log.info("Creating Spring Context: {} ......", springContextName);
       OsgiBundleResourcePatternResolver resLoader = new OsgiBundleResourcePatternResolver(bnd);
-      appCtx = new GenericWebApplicationContext(
-          servletContextManager.getServletContext(bnd.getBundleContext(), getCtxPath(bnd)));
+      appCtx = new GenericWebApplicationContext(ensureToGetServletContext(bnd));
       appCtx.setDisplayName(springContextName);
       appCtx.setResourceLoader(resLoader);
       ClassLoader loader = bnd.adapt(BundleWiring.class).getClassLoader();
@@ -270,8 +269,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
   }
 
   private void getOrCreateDispacher(Bundle bnd, GenericWebApplicationContext appCtx) {
-    ServletContext servletContext =
-        servletContextManager.getServletContext(bnd.getBundleContext(), getCtxPath(bnd));
+    ServletContext servletContext = ensureToGetServletContext(bnd);
     BundleContext bndCtx = bnd.getBundleContext();
     DispatcherServlet dispatcherServlet = getDispacher(bnd);
     if (dispatcherServlet == null) {
@@ -318,6 +316,30 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       log.error("Unexpected Exception", e);
     }
     return dispatchers;
+  }
+
+  /**
+   * ServletContext may not be available even when the
+   *
+   * @param bnd The Bundle that will use the servlet context
+   * @return ServletContext
+   */
+  private ServletContext ensureToGetServletContext(Bundle bnd) {
+    ServletContext servletContext = null;
+    int tryCount = 0;
+    while (tryCount < 10 && servletContext == null) {
+      servletContext =
+        servletContextManager.getServletContext(bnd.getBundleContext(), getCtxPath(bnd));
+      if (tryCount > 0) {
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      tryCount++;
+    }
+    return servletContext;
   }
 
   @Override
