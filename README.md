@@ -1,7 +1,7 @@
 # What is it, and what can it do?
 
 It is an osgi-extender-bundle which is triggered by the bundle events.  
-Bundles which contains spring mvc configurations could be plugged into osgi http whiteboard, the
+Bundles which contains spring mvc configurations could be plugged into osgi **http whiteboard**, the
 extender will:
 
 * Use the default or create a new ServletContext.

@@ -39,7 +39,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.http.context.ServletContextHelper;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
@@ -63,10 +62,8 @@ public class ServletContextManager
   /**
    * Available servlet contexts.
    */
-  private final Set<String> servletContexts =
-    Collections.synchronizedSet(new HashSet<>());
-  private final Map<String, ServiceRegistration<ServletContextHelper>> servletContextRegs =
-    Collections.synchronizedMap(new HashMap<>());
+  private final Set<String> liveCtxPath = Collections.synchronizedSet(new HashSet<>());
+  private final Set<String> pendingCtxPath = Collections.synchronizedSet(new HashSet<>());
   /**
    * The tasks will not run until the serlvet contexts(key is context path) are available.
    */
@@ -110,7 +107,7 @@ public class ServletContextManager
   public void scanBundleForServletContext(Bundle bnd) {
     if ("true".equals(bnd.getHeaders().get(SpringMvcConstants.ENABLED))) {
       String ctxPath = normalizeCtxPath(bnd.getHeaders().get(SpringMvcConstants.CONTEXT_ROOT));
-      if (!servletContexts.contains(ctxPath)) {
+      if (!liveCtxPath.contains(ctxPath)) {
         createServletContext(ctxPath);
       }
     }
@@ -122,7 +119,7 @@ public class ServletContextManager
       .map(bnd -> normalizeCtxPath(bnd.getHeaders().get(SpringMvcConstants.CONTEXT_ROOT)))
       .collect(Collectors.toSet())
       .forEach(p -> {
-        if (!servletContexts.contains(p)) {
+        if (!liveCtxPath.contains(p)) {
           createServletContext(p);
         }
       });
@@ -145,7 +142,7 @@ public class ServletContextManager
   }
 
   private void doCreatingServletContext(String p) {
-    if ("/".equals(normalizeCtxPath(p))) {
+    if ("/".equals(normalizeCtxPath(p)) || pendingCtxPath.contains(p)) {
       return;
     }
     Runnable task = () -> {
@@ -154,11 +151,10 @@ public class ServletContextManager
       props.put(HTTP_WHITEBOARD_CONTEXT_NAME, contextPathToName(p));
       props.put(HTTP_WHITEBOARD_CONTEXT_PATH, p);
       props.put(SpringMvcConstants.EXTENDER_NAME, "true");
-      ServiceRegistration<ServletContextHelper> registration =
-        httpWhiteBoardCtx.registerService(ServletContextHelper.class, new ServletContextHelper() {
-        }, props);
-      servletContextRegs.put(p, registration);
+      httpWhiteBoardCtx.registerService(ServletContextHelper.class, new ServletContextHelper() {
+      }, props);
     };
+    pendingCtxPath.add(p);
     // To create servlet contexts, we need to wait default context to be available.
     submitServletContextTask("/", task);
   }
@@ -209,7 +205,7 @@ public class ServletContextManager
    * submit a task which will run when the servlet context path is available
    */
   public synchronized void submitServletContextTask(String path, Runnable task) {
-    if (servletContexts.contains(path)) {
+    if (liveCtxPath.contains(path)) {
       jobs.add(new SimpleEntry<>(path, task));
     } else {
       initServletContextTaskQ(path);
@@ -223,7 +219,8 @@ public class ServletContextManager
     ServletContext servletContext = bndCtx.getService(reference);
     String contextPath = normalizeCtxPath(servletContext.getContextPath());
     log.info("ServletContext {} is now starting up......", contextPath);
-    servletContexts.add(contextPath);
+    liveCtxPath.add(contextPath);
+    pendingCtxPath.remove(contextPath);
     if ("/".equals(contextPath)) {
       httpWhiteBoardCtx = bndCtx;
     }
@@ -232,8 +229,7 @@ public class ServletContextManager
       jobs.addAll(servletContextTaskQs.get(contextPath)
         .stream()
         .map((r) -> new SimpleEntry<>(contextPath, r))
-        .collect(
-          Collectors.toList()));
+        .collect(Collectors.toList()));
       servletContextTaskQs.get(contextPath).clear();
       servletContextTaskQs.remove(contextPath);
     }
@@ -251,7 +247,7 @@ public class ServletContextManager
     BundleContext bndCtx = reference.getBundle().getBundleContext();
     ServletContext servletContext = bndCtx.getService(reference);
     String ctxPath = normalizeCtxPath(servletContext.getContextPath());
-    servletContexts.remove(ctxPath);
+    liveCtxPath.remove(ctxPath);
     log.info("ServletContext {} is now shutting down......", ctxPath);
   }
 }
