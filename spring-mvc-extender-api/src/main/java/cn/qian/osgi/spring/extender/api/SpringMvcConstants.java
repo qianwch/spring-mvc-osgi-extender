@@ -18,8 +18,8 @@ package cn.qian.osgi.spring.extender.api;
 
 public class SpringMvcConstants {
   public static final String ENABLED = "Spring-Mvc-Enabled";
-  public static final String SERVLET_PATTERN = "Spring-Mvc-Url-Pattern";
-  public static final String CONTEXT_ROOT = "Spring-Mvc-Context-Path";
+  public static final String SERVLET_PATTERN = "Spring-Mvc-UrlPattern";
+  public static final String CONTEXT_ROOT = "Spring-Mvc-ContextPath";
   public static final String ROOT_CONTEXT_CONFIG_CLASSES = "Spring-Root-Context-Config-Classes";
   public static final String CONTEXT_CONFIG_CLASSES = "Spring-Context-Config-Classes";
   public static final String ROOT_CONTEXT_XML_LOCATIONS = "Spring-Root-Context-Xml-Locations";
