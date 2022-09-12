@@ -319,7 +319,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
   }
 
   /**
-   * ServletContext may not be available even when the
+   * ServletContext may not be available,sometimes we did need to wait.
    *
    * @param bnd The Bundle that will use the servlet context
    * @return ServletContext
