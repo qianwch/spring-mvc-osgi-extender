@@ -17,6 +17,7 @@
 package cn.qian.osgi.spring.extender.api;
 
 import java.util.Collection;
+import java.util.Map;
 import javax.servlet.ServletContext;
 import org.osgi.framework.Bundle;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -29,6 +30,14 @@ public interface SpringMvcConfigurationManager {
   void destroySpringMvcConfig(long bndId);
 
   void createSpringMvcConfig(long bndId);
+
+  Map<String, Object> getSpringContextBeans(Bundle bnd);
+
+  Map<String, Object> getSpringContextBeans(long bndId);
+
+  Map<String, Object> getSpringRootContextBeans(Bundle bnd);
+
+  Map<String, Object> getSpringRootContextBeans(long bndId);
 
   void scanAndLoadSpringMvcConfigs();
 
