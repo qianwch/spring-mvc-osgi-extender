@@ -22,8 +22,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.Servlet;
@@ -59,12 +61,12 @@ import static org.osgi.service.http.whiteboard.HttpWhiteboardConstants.HTTP_WHIT
 @SuppressWarnings({"unchecked", "SpellCheckingInspection"})
 public class SpringMvcConfigurationManagerImpl implements SpringMvcConfigurationManager {
   private static final Logger log =
-      LoggerFactory.getLogger(SpringMvcConfigurationManagerImpl.class);
+    LoggerFactory.getLogger(SpringMvcConfigurationManagerImpl.class);
   private final BundleContext extender;
   private final ServletContextManager servletContextManager;
 
   public SpringMvcConfigurationManagerImpl(BundleContext bndCtx,
-      ServletContextManager servletContextManager) {
+    ServletContextManager servletContextManager) {
     this.extender = bndCtx;
     this.servletContextManager = servletContextManager;
   }
@@ -75,7 +77,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       DispatcherServlet dispatcherServlet = getDispacher(bnd);
       if (dispatcherServlet != null) {
         ConfigurableApplicationContext appCtx =
-            (ConfigurableApplicationContext) dispatcherServlet.getWebApplicationContext();
+          (ConfigurableApplicationContext) dispatcherServlet.getWebApplicationContext();
         if (appCtx != null) {
           ServiceRegistration<Servlet> registration;
           try {
@@ -85,7 +87,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
             log.error("ServiceRegistration was not saved?", e);
           }
           ConfigurableApplicationContext rootCtx =
-              (ConfigurableApplicationContext) appCtx.getParent();
+            (ConfigurableApplicationContext) appCtx.getParent();
           if (rootCtx != null) {
             log.info("Shutting down spring context: {} ...", rootCtx.getDisplayName());
             rootCtx.close();
@@ -135,6 +137,54 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     createSpringMvcConfig(extender.getBundle(bndId));
   }
 
+  @Override
+  public Map<String, Object> getSpringContextBeans(Bundle bnd) {
+    Map<String, Object> beans = new HashMap<>();
+    if (mvcEnabled(bnd)) {
+      DispatcherServlet dispatcherServlet = getDispacher(bnd);
+      if (dispatcherServlet != null) {
+        ConfigurableApplicationContext appCtx =
+          (ConfigurableApplicationContext) dispatcherServlet.getWebApplicationContext();
+        if (appCtx != null) {
+          Arrays.stream(appCtx.getBeanDefinitionNames())
+            .forEach((n) -> beans.put(n, appCtx.getBean(n)));
+        }
+      }
+    }
+    return beans;
+  }
+
+  @Override
+  public Map<String, Object> getSpringContextBeans(long bndId) {
+    return getSpringContextBeans(extender.getBundle(bndId));
+  }
+
+  @Override
+  public Map<String, Object> getSpringRootContextBeans(Bundle bnd) {
+    Map<String, Object> beans = new HashMap<>();
+    if (mvcEnabled(bnd)) {
+      DispatcherServlet dispatcherServlet = getDispacher(bnd);
+      if (dispatcherServlet != null) {
+        ConfigurableApplicationContext appCtx =
+          (ConfigurableApplicationContext) dispatcherServlet.getWebApplicationContext();
+        if (appCtx != null) {
+          ConfigurableApplicationContext rootCtx =
+            (ConfigurableApplicationContext) appCtx.getParent();
+          if (rootCtx != null) {
+            Arrays.stream(appCtx.getBeanDefinitionNames())
+              .forEach((n) -> beans.put(n, appCtx.getBean(n)));
+          }
+        }
+      }
+    }
+    return beans;
+  }
+
+  @Override
+  public Map<String, Object> getSpringRootContextBeans(long bndId) {
+    return getSpringRootContextBeans(extender.getBundle(bndId));
+  }
+
   private String getSpringContextName(Bundle bnd) {
     return SpringMvcConstants.CONTEXT_NAME_PREFIX + bnd.getSymbolicName();
   }
@@ -161,34 +211,34 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     if (appCtx == null) {
       log.info("Creating Spring Context: {} ......", springContextName);
       OsgiBundleResourcePatternResolver resLoader = new OsgiBundleResourcePatternResolver(bnd);
-      appCtx = new GenericWebApplicationContext(ensureToGetServletContext(bnd));
+      ServletContext servletContext = ensureToGetServletContext(bnd);
+      appCtx = new GenericWebApplicationContext(servletContext);
       appCtx.setDisplayName(springContextName);
       appCtx.setResourceLoader(resLoader);
-      ClassLoader loader = getBundleClassLoader(bnd);
-      appCtx.setClassLoader(loader);
+      appCtx.setClassLoader(bnd.adapt(BundleWiring.class).getClassLoader());
       appCtx.getBeanFactory()
-          .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
+        .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
       // Workarround for pax web bug about classloader
-      appCtx.getBeanFactory()
-          .registerSingleton("setClassLoadInterceptor", new WebMvcConfigurer() {
+      appCtx.getBeanFactory().registerSingleton("setClassLoadInterceptor", new WebMvcConfigurer() {
+        @Override
+        public void addInterceptors(InterceptorRegistry registry) {
+          registry.addInterceptor(new HandlerInterceptor() {
             @Override
-            public void addInterceptors(InterceptorRegistry registry) {
-              registry.addInterceptor(new HandlerInterceptor() {
-                @Override
-                public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
-                    Object handler) {
-                  Thread.currentThread().setContextClassLoader(getBundleClassLoader(bnd));
-                  return true;
-                }
-              });
+            public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
+              Object handler) {
+              Thread.currentThread()
+                .setContextClassLoader(bnd.adapt(BundleWiring.class).getClassLoader());
+              return true;
             }
           });
+        }
+      });
       String configCls = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_CONFIG_CLASSES);
       String xmlCfgs = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_XML_LOCATIONS);
       if (configCls != null) {
         log.info("Loading spring context configuration classes for {} .....", springContextName);
         AnnotatedBeanDefinitionReader annotatedBeanDefinitionReader =
-            new AnnotatedBeanDefinitionReader(appCtx);
+          new AnnotatedBeanDefinitionReader(appCtx);
         String[] cfgs = configCls.split(",");
         Arrays.stream(cfgs).forEach(c -> {
           try {
@@ -200,8 +250,8 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       }
       if (configCls == null && xmlCfgs == null) {
         log.info(
-            "No context configuration specified for {}, will use classpath:/META-INF/spring/*.xml ......",
-            springContextName);
+          "No context configuration specified for {}, will use classpath:/META-INF/spring/*.xml ......",
+          springContextName);
         xmlCfgs = "classpath:/META-INF/spring/*.xml";
       }
       if (xmlCfgs != null) {
@@ -239,14 +289,13 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       rootCtx = new GenericApplicationContext();
       rootCtx.setDisplayName(rootContextName);
       rootCtx.setResourceLoader(resLoader);
-      ClassLoader loader = getBundleClassLoader(bnd);
-      rootCtx.setClassLoader(loader);
+      rootCtx.setClassLoader(bnd.adapt(BundleWiring.class).getClassLoader());
       rootCtx.getBeanFactory()
-          .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
+        .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
       if (configCls != null) {
         log.info("Loading spring root context configuration classes for {} .....", rootContextName);
         AnnotatedBeanDefinitionReader annotatedBeanDefinitionReader =
-            new AnnotatedBeanDefinitionReader(rootCtx);
+          new AnnotatedBeanDefinitionReader(rootCtx);
         String[] cfgs = configCls.split(",");
         Arrays.stream(cfgs).forEach(c -> {
           try {
@@ -258,7 +307,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       }
       if (xmlCfgs != null) {
         log.info("Loading spring root context xml configuration files for {} .....",
-            rootContextName);
+          rootContextName);
         XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(rootCtx);
         String[] xmls = xmlCfgs.split(",");
         xmlBeanDefinitionReader.loadBeanDefinitions(xmls);
@@ -268,10 +317,10 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     }
     return rootCtx;
   }
-
-  private static ClassLoader getBundleClassLoader(Bundle bnd) {
-    return bnd.adapt(BundleWiring.class).getClassLoader();
-  }
+  //
+  //public static ClassLoader getBundleClassLoader(Bundle bnd) {
+  //  return bnd.adapt(BundleWiring.class).getClassLoader();
+  //}
 
   private DispatcherServlet getDispacher(Bundle bnd) {
     BundleContext bndCtx = bnd.getBundleContext();
@@ -280,7 +329,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     Collection<ServiceReference<Servlet>> serviceReferences = Collections.EMPTY_LIST;
     try {
       serviceReferences = bndCtx.getServiceReferences(Servlet.class,
-          String.format("(%s=%s)", HTTP_WHITEBOARD_SERVLET_NAME, servletName));
+        String.format("(%s=%s)", HTTP_WHITEBOARD_SERVLET_NAME, servletName));
     } catch (InvalidSyntaxException e) {
       log.error("Unexpected", e);
     }
@@ -313,12 +362,12 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       props.put(HTTP_WHITEBOARD_SERVLET_NAME, getDispatcherName(bnd));
       props.put(HTTP_WHITEBOARD_SERVLET_ASYNC_SUPPORTED, "true");
       props.put(HTTP_WHITEBOARD_CONTEXT_SELECT,
-          String.format("(osgi.http.whiteboard.context.name=%s)",
-              servletContext.getServletContextName()));
+        String.format("(osgi.http.whiteboard.context.name=%s)",
+          servletContext.getServletContextName()));
       props.put(SpringMvcConstants.EXTENDER_NAME, "true");
       log.info("Registering Servlet: {} ...", getDispatcherName(bnd));
       ServiceRegistration<Servlet> registration =
-          bndCtx.registerService(Servlet.class, dispatcherServlet, props);
+        bndCtx.registerService(Servlet.class, dispatcherServlet, props);
       appCtx.getBeanFactory().registerSingleton("dispatcherServletRegistration", registration);
     }
   }
@@ -328,7 +377,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     Collection<ServiceReference<Servlet>> serviceReferences;
     try {
       serviceReferences = extender.getServiceReferences(Servlet.class,
-          String.format("(%s=%s)", SpringMvcConstants.EXTENDER_NAME, "true"));
+        String.format("(%s=%s)", SpringMvcConstants.EXTENDER_NAME, "true"));
       serviceReferences.forEach((ref) -> {
         Servlet servlet = extender.getService(ref);
         if (servlet instanceof DispatcherServlet) {
@@ -369,15 +418,15 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
   @Override
   public void scanAndLoadSpringMvcConfigs() {
     Arrays.stream(extender.getBundles())
-        .filter((b) -> b.getState() == Bundle.ACTIVE && mvcEnabled(b))
-        .forEach(this::createSpringMvcConfig);
+      .filter((b) -> b.getState() == Bundle.ACTIVE && mvcEnabled(b))
+      .forEach(this::createSpringMvcConfig);
   }
 
   @Override
   public void destroyAllSpringMvcConfigs() {
     Arrays.stream(extender.getBundles())
-        .filter((b) -> b.getState() == Bundle.ACTIVE && mvcEnabled(b))
-        .forEach(this::destroySpringMvcConfig);
+      .filter((b) -> b.getState() == Bundle.ACTIVE && mvcEnabled(b))
+      .forEach(this::destroySpringMvcConfig);
   }
 
   @Override
@@ -385,7 +434,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     Set<ConfigurableApplicationContext> applicationContexts = new HashSet<>();
     listDispatchers().forEach((dispatcher) -> {
       ConfigurableApplicationContext applicationContext =
-          (ConfigurableApplicationContext) dispatcher.getWebApplicationContext();
+        (ConfigurableApplicationContext) dispatcher.getWebApplicationContext();
       if (applicationContext != null) {
         if (applicationContext.getParent() != null) {
           applicationContexts.add((ConfigurableApplicationContext) applicationContext.getParent());
@@ -399,8 +448,8 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
   @Override
   public Collection<ServletContext> listServletContexts() {
     return listDispatchers().stream()
-        .filter((s) -> s.getWebApplicationContext() != null)
-        .map((s) -> s.getWebApplicationContext().getServletContext())
-        .collect(Collectors.toSet());
+      .filter((s) -> s.getWebApplicationContext() != null)
+      .map((s) -> s.getWebApplicationContext().getServletContext())
+      .collect(Collectors.toSet());
   }
 }

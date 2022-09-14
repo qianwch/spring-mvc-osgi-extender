@@ -132,3 +132,5 @@ Furthermore, the extender adds some karaf shell commands:
   * Stop spring mvc contexts. If "-a", all contexts will be shutdown. 
 * spring:list
   * List running spring mvc contexts
+* spring:list-beans <bundleId>
+  * List beans spring context

@@ -163,9 +163,6 @@ public class ServletContextManager
     return "http" + p.replace('/', '_');
   }
 
-  /**
-   * Get a bundle scoped ServletContext
-   */
   public ServletContext getServletContext(BundleContext bndCtx, String ctxPath) {
     Collection<ServiceReference<ServletContext>> serviceReferences = Collections.EMPTY_LIST;
     try {
