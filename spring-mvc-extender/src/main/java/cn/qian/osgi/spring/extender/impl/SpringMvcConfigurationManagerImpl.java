@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.eclipse.gemini.blueprint.io.OsgiBundleResourcePatternResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -44,6 +46,9 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.GenericWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import static cn.qian.osgi.spring.extender.impl.ServletContextManager.normalizeCtxPath;
 import static org.osgi.service.http.whiteboard.HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT;
@@ -159,10 +164,25 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       appCtx = new GenericWebApplicationContext(ensureToGetServletContext(bnd));
       appCtx.setDisplayName(springContextName);
       appCtx.setResourceLoader(resLoader);
-      ClassLoader loader = bnd.adapt(BundleWiring.class).getClassLoader();
+      ClassLoader loader = getBundleClassLoader(bnd);
       appCtx.setClassLoader(loader);
       appCtx.getBeanFactory()
           .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
+      // Workarround for pax web bug about classloader
+      appCtx.getBeanFactory()
+          .registerSingleton("setClassLoadInterceptor", new WebMvcConfigurer() {
+            @Override
+            public void addInterceptors(InterceptorRegistry registry) {
+              registry.addInterceptor(new HandlerInterceptor() {
+                @Override
+                public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
+                    Object handler) {
+                  Thread.currentThread().setContextClassLoader(getBundleClassLoader(bnd));
+                  return true;
+                }
+              });
+            }
+          });
       String configCls = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_CONFIG_CLASSES);
       String xmlCfgs = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_XML_LOCATIONS);
       if (configCls != null) {
@@ -219,7 +239,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       rootCtx = new GenericApplicationContext();
       rootCtx.setDisplayName(rootContextName);
       rootCtx.setResourceLoader(resLoader);
-      ClassLoader loader = bnd.adapt(BundleWiring.class).getClassLoader();
+      ClassLoader loader = getBundleClassLoader(bnd);
       rootCtx.setClassLoader(loader);
       rootCtx.getBeanFactory()
           .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
@@ -247,6 +267,10 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       log.info("Spring Root Context {} is already running.", getSpringContextName(bnd));
     }
     return rootCtx;
+  }
+
+  private static ClassLoader getBundleClassLoader(Bundle bnd) {
+    return bnd.adapt(BundleWiring.class).getClassLoader();
   }
 
   private DispatcherServlet getDispacher(Bundle bnd) {
