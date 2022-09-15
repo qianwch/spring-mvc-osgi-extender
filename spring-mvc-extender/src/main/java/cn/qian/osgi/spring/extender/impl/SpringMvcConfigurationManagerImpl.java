@@ -38,6 +38,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,21 +219,37 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       appCtx.setClassLoader(bnd.adapt(BundleWiring.class).getClassLoader());
       appCtx.getBeanFactory()
         .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
-      // Workarround for pax web bug about classloader
-      appCtx.getBeanFactory().registerSingleton("setClassLoadInterceptor", new WebMvcConfigurer() {
-        @Override
-        public void addInterceptors(InterceptorRegistry registry) {
-          registry.addInterceptor(new HandlerInterceptor() {
-            @Override
-            public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
-              Object handler) {
-              Thread.currentThread()
-                .setContextClassLoader(bnd.adapt(BundleWiring.class).getClassLoader());
-              return true;
-            }
-          });
+      // Get the installed whiteboard version.
+      Bundle whiteBoard = null;
+      Bundle[] bundles = bnd.getBundleContext().getBundles();
+      for (Bundle bundle : bundles) {
+        if ("org.ops4j.pax.web.pax-web-extender-whiteboard".equals(bundle.getSymbolicName())) {
+          if (whiteBoard == null) {
+            whiteBoard = bundle;
+          }
+          if (whiteBoard.getVersion().compareTo(bundle.getVersion()) < 0) {
+            whiteBoard = bundle;
+          }
         }
-      });
+      }
+      // Workarround for pax web bug about classloader, only enabled for version under 8.0.9
+      if (whiteBoard != null && whiteBoard.getVersion().compareTo(new Version("8.0.9")) < 0) {
+        appCtx.getBeanFactory()
+            .registerSingleton("setClassLoadInterceptor", new WebMvcConfigurer() {
+              @Override
+              public void addInterceptors(InterceptorRegistry registry) {
+                registry.addInterceptor(new HandlerInterceptor() {
+                  @Override
+                  public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
+                      Object handler) {
+                    Thread.currentThread()
+                        .setContextClassLoader(bnd.adapt(BundleWiring.class).getClassLoader());
+                    return true;
+                  }
+                });
+              }
+            });
+      }
       String configCls = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_CONFIG_CLASSES);
       String xmlCfgs = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_XML_LOCATIONS);
       if (configCls != null) {
