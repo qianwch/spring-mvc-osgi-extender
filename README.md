@@ -7,6 +7,7 @@ extender will:
 * Use the default or create a new ServletContext.
 * Create spring contexts specified by the bundle headers.
 * Create Dispatcher Servlet instance and associate spring context with it.
+* Support **@ComponentScan** annotations
 * Support creating a parent spring context for the dispatcher spring context.
 
 # Motivation

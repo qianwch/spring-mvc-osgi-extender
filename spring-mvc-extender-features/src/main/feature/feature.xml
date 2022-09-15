@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<features xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  name="spring-mvc-extender-${project.version}"
-  xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
-  xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0">
-  <feature name="spring-mvc-extender-common" version="${project.version}">
+<features name="spring-mvc-extender-${project.version}"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
+    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0">
+  <feature name="spring-mvc-extender-common" version="${project.version}"
+      description="Spring Mvc OSGI Extender API">
     <feature prerequisite="true">http-whiteboard</feature>
     <feature prerequisite="true">spring</feature>
     <feature>spring-aspects</feature>
@@ -18,22 +19,26 @@
     <feature>spring-websocket</feature>
     <feature>spring-security</feature>
     <feature>jackson</feature>
-    <bundle>mvn:${project.groupId}/spring-mvc-extender-api/${project.version}</bundle>
+    <bundle start-level="40">mvn:${project.groupId}/spring-mvc-extender-api/${project.version}
+    </bundle>
   </feature>
   <feature name="spring-mvc-extender" description="Spring Mvc OSGI Extender Features"
-    version="${project.version}">
+      version="${project.version}">
     <details>Spring Mvc OSGI Extender Features</details>
     <feature version="${project.version}">spring-mvc-extender-common</feature>
-    <bundle dependency="true">
+    <bundle dependency="true" start-level="30">
       mvn:org.eclipse.gemini.blueprint/gemini-blueprint-io/3.0.0.M01
     </bundle>
-    <bundle>mvn:${project.groupId}/spring-mvc-extender/${project.version}</bundle>
+    <bundle start-level="40">mvn:${project.groupId}/spring-mvc-extender/${project.version}</bundle>
   </feature>
-  <feature name="spring-mvc-extender-command" version="${project.version}">
+  <feature name="spring-mvc-extender-command" version="${project.version}"
+      description="Spring Mvc OSGI Extender Commands">
     <feature version="${project.version}">spring-mvc-extender-common</feature>
     <conditional>
       <condition>shell</condition>
-      <bundle>mvn:${project.groupId}/spring-mvc-extender-command/${project.version}</bundle>
+      <bundle start-level="40">
+        mvn:${project.groupId}/spring-mvc-extender-command/${project.version}
+      </bundle>
     </conditional>
   </feature>
 </features>
