@@ -160,24 +160,13 @@ public class ServletContextManager
   }
 
   public static String contextPathToName(String p) {
-    return "http" + p.replace('/', '_');
-  }
-
-  public ServletContext getServletContext(BundleContext bndCtx, String ctxPath) {
-    Collection<ServiceReference<ServletContext>> serviceReferences = Collections.EMPTY_LIST;
-    try {
-      serviceReferences = bndCtx.getServiceReferences(ServletContext.class,
-        String.format("(osgi.web.contextpath=%s)", ctxPath));
-    } catch (InvalidSyntaxException e) {
-      log.error("Unexpected", e);
+    String name;
+    if ("".equals(p) || "/".equals(p)) {
+      name = "default";
+    } else {
+      name = "http" + p.replace('/', '_');
     }
-    ServletContext servletContext = null;
-    if (serviceReferences.size() > 0) {
-      ServiceReference<ServletContext> ref = serviceReferences.iterator().next();
-      servletContext = bndCtx.getService(ref);
-      bndCtx.ungetService(ref);
-    }
-    return servletContext;
+    return name;
   }
 
   public void shutdown() {
