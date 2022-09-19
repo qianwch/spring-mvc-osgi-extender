@@ -22,6 +22,9 @@ import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
+import org.apache.karaf.shell.support.table.ShellTable;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
 @Service
@@ -32,9 +35,17 @@ public class ListCommand implements Action {
 
   @Override
   public Object execute() {
+    ShellTable table = new ShellTable();
+    table.column("BundleID");
+    table.column("BundleName");
+    table.column("SpringContext");
     Collection<ConfigurableApplicationContext>
       contexts = springMvcConfigurationManager.listSpringContexts();
-    contexts.forEach(c -> System.out.println(c.getDisplayName()));
+    contexts.forEach(c -> {
+      Bundle b = c.getBean(BundleContext.class).getBundle();
+      table.addRow().addContent(b.getBundleId(), b.getSymbolicName(), c.getDisplayName());
+    });
+    table.print(System.out);
     return null;
   }
 }
