@@ -3,15 +3,14 @@
   xmlns="http://maven.apache.org/POM/4.0.0"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>demo-thymeleaf</artifactId>
+    <groupId>cn.qian.osgi</groupId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
 
-  <groupId>cn.qian.osgi</groupId>
-  <artifactId>demo-mvc1</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>demo-thymeleaf-app</artifactId>
   <packaging>jar</packaging>
-
-  <name>demo-mvc1</name>
-  <url>http://maven.apache.org</url>
-
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -44,6 +43,16 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf</artifactId>
+      <version>3.0.15.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.thymeleaf</groupId>
+      <artifactId>thymeleaf-spring5</artifactId>
+      <version>3.0.15.RELEASE</version>
+    </dependency>
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webmvc</artifactId>
       <version>${spring.version}</version>
@@ -55,16 +64,9 @@
       <type>jar</type>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.thymeleaf</groupId>
-      <artifactId>thymeleaf-spring5</artifactId>
-      <version>3.0.15.RELEASE</version>
-      <scope>compile</scope>
-    </dependency>
   </dependencies>
 
   <build>
-    <finalName>demo-mvc1</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>
@@ -74,8 +76,8 @@
         <configuration>
           <instructions>
             <Spring-Mvc-Enabled>true</Spring-Mvc-Enabled>
-            <Spring-Mvc-ContextPath>/mvc1</Spring-Mvc-ContextPath>
-            <Spring-Context-Config-Classes>cn.qian.osgi.demo1.config.MvcConfiguration
+            <Spring-Mvc-ContextPath>/mvc2</Spring-Mvc-ContextPath>
+            <Spring-Context-Config-Classes>cn.qian.osgi.demo2.config.MvcConfiguration
             </Spring-Context-Config-Classes>
             <Export-Package>!*</Export-Package>
             <Import-Package>
@@ -95,6 +97,7 @@
               org.springframework.cglib.core,
               org.springframework.cglib.proxy,
               org.springframework.cglib.reflect,
+              org.thymeleaf.spring5.expression,
               *
             </Import-Package>
             <_noee>true</_noee>

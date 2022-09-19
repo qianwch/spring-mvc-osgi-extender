@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <title>Spring Thyme Seed Starter Manager</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <link rel="stylesheet" type="text/css" media="all" href="../../css/stsm.css" th:href="@{/css/stsm.css}"/>
+</head>
+
+<body>
+<div>
+  <span>Name:</span><span th:text="${msg.name}"></span>
+</div>
+<div>
+  <span>Message:</span><span th:text="${msg.msg}"></span>
+</div>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<features name="demo-thymeleaf-${project.version}"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
+    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0">
+  <feature name="demo-thymeleaf" version="${project.version}">
+    <feature>spring-mvc-extender</feature>
+    <bundle>mvn:org.javassist/javassist/RELEASE</bundle>
+    <bundle>wrap:mvn:ognl/ognl/RELEASE</bundle>
+    <bundle>mvn:org.attoparser/attoparser/RELEASE</bundle>
+    <bundle>mvn:org.unbescape/unbescape/RELEASE</bundle>
+    <bundle>wrap:mvn:org.thymeleaf/thymeleaf/3.0.15.RELEASE</bundle>
+    <bundle>wrap:mvn:org.thymeleaf/thymeleaf-spring5/3.0.15.RELEASE</bundle>
+    <bundle>mvn:${project.groupId}/demo-thymeleaf-app/${project.version}
+    </bundle>
+  </feature>
+</features>
