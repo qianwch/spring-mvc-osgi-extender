@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <title>Hello World</title>
+</head>
+
+<body>
+<table border="2">
+  <thead>
+  <tr>
+    <td>Id</td>
+    <td>Name</td>
+    <td>Message</td>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="msg: ${msgs}">
+    <td th:text="${msg.id}" />
+    <td th:text="${msg.name}" />
+    <td th:text="${msg.msg}" />
+  </tr>
+  </tbody>
+</table>
+</body>
+</html>

@@ -6,6 +6,7 @@
     xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0">
   <feature name="spring-mvc-extender-common" version="${project.version}"
       description="Spring Mvc OSGI Extender API">
+    <feature prerequisite="true">pax-web-http-jetty</feature>
     <feature prerequisite="true">pax-web-whiteboard</feature>
     <feature prerequisite="true">spring</feature>
     <feature>spring-aspects</feature>

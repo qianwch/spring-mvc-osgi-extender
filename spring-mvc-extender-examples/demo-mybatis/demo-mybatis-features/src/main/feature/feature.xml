@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<features name="demo-mybatis-${project.version}"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://karaf.apache.org/xmlns/features/v1.4.0"
+    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.4.0">
+  <feature name="demo-mybatis" version="${project.version}">
+    <config name="org.ops4j.datasource-cn.qian.demo-mybatis-ds">
+      osgi.jdbc.driver.class=org.h2.Driver
+      pool=dbcp2
+      dataSourceName=jdbc/demodb
+      url=jdbc:h2:mem:demodb
+    </config>
+    <feature>spring-mvc-extender</feature>
+    <feature>jdbc</feature>
+    <feature>jndi</feature>
+    <feature>pax-jdbc-h2</feature>
+    <feature>pax-jdbc-pool-dbcp2</feature>
+    <bundle>mvn:org.javassist/javassist/RELEASE</bundle>
+    <bundle>wrap:mvn:ognl/ognl/RELEASE</bundle>
+    <bundle>mvn:org.attoparser/attoparser/RELEASE</bundle>
+    <bundle>mvn:org.unbescape/unbescape/RELEASE</bundle>
+    <bundle>wrap:mvn:org.thymeleaf/thymeleaf/3.0.15.RELEASE</bundle>
+    <bundle>wrap:mvn:org.thymeleaf/thymeleaf-spring5/3.0.15.RELEASE</bundle>
+    <bundle>mvn:org.mybatis/mybatis/RELEASE</bundle>
+    <bundle>mvn:org.mybatis/mybatis-spring/RELEASE</bundle>
+    <bundle>mvn:${project.groupId}/demo-mybatis-app/${project.version}</bundle>
+  </feature>
+</features>
