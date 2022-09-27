@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>demo-mybatis</artifactId>
+    <groupId>cn.qian.osgi</groupId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>demo-mybatis-features</artifactId>
+  <packaging>feature</packaging>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.karaf.tooling</groupId>
+        <artifactId>karaf-maven-plugin</artifactId>
+        <version>4.4.1</version>
+        <extensions>true</extensions>
+        <configuration>
+          <startLevel>50</startLevel>
+          <enableGeneration>false</enableGeneration>
+          <aggregateFeatures>false</aggregateFeatures>
+          <checkDependencyChange>false</checkDependencyChange>
+          <failOnDependencyChange>false</failOnDependencyChange>
+          <logDependencyChanges>false</logDependencyChanges>
+          <overwriteChangedDependencies>false</overwriteChangedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
