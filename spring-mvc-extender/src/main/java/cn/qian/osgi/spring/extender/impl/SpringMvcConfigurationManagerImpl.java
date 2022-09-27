@@ -18,6 +18,7 @@ package cn.qian.osgi.spring.extender.impl;
 
 import cn.qian.osgi.spring.extender.api.SpringMvcConfigurationManager;
 import cn.qian.osgi.spring.extender.api.SpringMvcConstants;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,8 +41,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.framework.Version;
-import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
@@ -199,6 +200,24 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
     return Boolean.parseBoolean(bnd.getHeaders().get(SpringMvcConstants.ENABLED));
   }
 
+  private boolean needTcclFixInterceptor() {
+    boolean need = true;
+    ServiceReference<ConfigurationAdmin> sr = extender.getServiceReference(ConfigurationAdmin.class);
+    try {
+      if (sr != null) {
+        ConfigurationAdmin cm = extender.getService(sr);
+        if (cm != null) {
+          Configuration conf = cm.getConfiguration("org.ops4j.pax.web");
+          need = !"whiteboard".equals(conf.getProperties().get("org.ops4j.pax.web.tccl.type"));
+        }
+      }
+    } catch (IOException e) {
+    } finally {
+      extender.ungetService(sr);
+    }
+    return need;
+  }
+
   private GenericWebApplicationContext getOrCreateSpringContext(Bundle bnd) {
     String springContextName = getSpringContextName(bnd);
     DispatcherServlet dispatcher = getDispacher(bnd);
@@ -227,8 +246,8 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
           }
         }
       }
-      // Workarround for pax web bug about classloader, only enabled for version under 8.0.9
-      if (whiteBoard != null && whiteBoard.getVersion().compareTo(new Version("8.0.9")) < 0) {
+      // Workarround for pax web bug about tccl when org.ops4j.pax.web.tccl.type != whiteboard
+      if (needTcclFixInterceptor()) {
         appCtx.getBeanFactory()
             .registerSingleton("setClassLoadInterceptor", new WebMvcConfigurer() {
               @Override
@@ -238,7 +257,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
                   public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
                       Object handler) {
                     Thread.currentThread()
-                        .setContextClassLoader(bnd.adapt(BundleWiring.class).getClassLoader());
+                        .setContextClassLoader(request.getServletContext().getClassLoader());
                     return true;
                   }
                 });

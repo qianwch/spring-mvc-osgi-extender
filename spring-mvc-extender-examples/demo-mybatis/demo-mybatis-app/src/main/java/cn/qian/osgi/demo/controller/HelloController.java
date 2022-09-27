@@ -52,7 +52,7 @@ public class HelloController implements InitializingBean {
 
   public void init() {
     try (Connection conn = ds.getConnection()) {
-      ResultSet rs = conn.getMetaData().getTables(null, null, "hello_msg", new String[] {"TABLE"});
+      ResultSet rs = conn.getMetaData().getTables(null, null, "HELLO_MSG", new String[] {"TABLE"});
       if (!rs.next()) {
         Statement stmt = conn.createStatement();
         stmt.execute("create table hello_msg (id IDENTITY primary key, name varchar(64), msg varchar(128))");
@@ -60,7 +60,6 @@ public class HelloController implements InitializingBean {
       }
       rs.close();
     } catch (Exception ex) {
-      ex.printStackTrace();
     }
   }
 
