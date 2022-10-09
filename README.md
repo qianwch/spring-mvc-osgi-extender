@@ -44,9 +44,9 @@ Everything needed would be installed with the feature.
 
 ```bash
 # Clone the source code
-git clone https://github.com/qianwch/spring-mvc-extender.git
+git clone https://github.com/qianwch/spring-mvc-osgi-extender.git
 # Build
-cd spring-mvc-extender
+cd spring-mvc-osgi-extender
 mvn clean package install
 # Install the features to karaf
 feature:repo-add mvn:cn.qian.osgi/spring-mvc-extender-features/LATEST/xml/features
@@ -133,5 +133,5 @@ Furthermore, the extender adds some karaf shell commands:
   * Stop spring mvc contexts. If "-a", all contexts will be shutdown. 
 * spring:list
   * List running spring mvc contexts
-* spring:list-beans <bundleId>
+* spring:list-beans \<bundleId>
   * List beans spring context
