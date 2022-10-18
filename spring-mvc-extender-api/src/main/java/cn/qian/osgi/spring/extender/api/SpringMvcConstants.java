@@ -22,8 +22,6 @@ public class SpringMvcConstants {
   public static final String CONTEXT_ROOT = "Spring-Mvc-ContextPath";
   public static final String ROOT_CONTEXT_CONFIG_CLASSES = "Spring-Root-Context-Config-Classes";
   public static final String CONTEXT_CONFIG_CLASSES = "Spring-Context-Config-Classes";
-  public static final String ROOT_CONTEXT_XML_LOCATIONS = "Spring-Root-Context-Xml-Locations";
-  public static final String CONTEXT_XML_LOCATIONS = "Spring-Context-Xml-Locations";
   public static final String EXTENDER_NAME = "cn.qian.osgi.spring.extender";
   public static final String CONTEXT_NAME_PREFIX =
       SpringMvcConstants.EXTENDER_NAME + ".spring.context.";
