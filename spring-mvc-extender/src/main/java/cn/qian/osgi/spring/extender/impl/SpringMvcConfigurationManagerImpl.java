@@ -45,7 +45,6 @@ import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotatedBeanDefinitionReader;
 import org.springframework.context.support.GenericApplicationContext;
@@ -202,7 +201,8 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
 
   private boolean needTcclFixInterceptor() {
     boolean need = true;
-    ServiceReference<ConfigurationAdmin> sr = extender.getServiceReference(ConfigurationAdmin.class);
+    ServiceReference<ConfigurationAdmin> sr =
+        extender.getServiceReference(ConfigurationAdmin.class);
     try {
       if (sr != null) {
         ConfigurationAdmin cm = extender.getService(sr);
@@ -265,7 +265,6 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
             });
       }
       String configCls = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_CONFIG_CLASSES);
-      String xmlCfgs = bnd.getHeaders().get(SpringMvcConstants.CONTEXT_XML_LOCATIONS);
       if (configCls != null) {
         log.info("Loading spring context configuration classes for {} .....", springContextName);
         AnnotatedBeanDefinitionReader annotatedBeanDefinitionReader =
@@ -279,18 +278,6 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
           }
         });
       }
-      if (configCls == null && xmlCfgs == null) {
-        log.info(
-            "No context configuration specified for {}, will use classpath:/META-INF/spring/*.xml ......",
-            springContextName);
-        xmlCfgs = "classpath:/META-INF/spring/*.xml";
-      }
-      if (xmlCfgs != null) {
-        log.info("Loading spring context xml configuration files for {} .....", springContextName);
-        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(appCtx);
-        String[] xmls = xmlCfgs.split(",");
-        xmlBeanDefinitionReader.loadBeanDefinitions(xmls);
-      }
     } else {
       log.info("Spring Context {} is already running.", getSpringContextName(bnd));
     }
@@ -300,8 +287,7 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
   private ConfigurableApplicationContext getOrCreateSpringRootContext(Bundle bnd) {
     String rootContextName = getSpringRootContextName(bnd);
     String configCls = bnd.getHeaders().get(SpringMvcConstants.ROOT_CONTEXT_CONFIG_CLASSES);
-    String xmlCfgs = bnd.getHeaders().get(SpringMvcConstants.ROOT_CONTEXT_XML_LOCATIONS);
-    if (configCls == null && xmlCfgs == null) {
+    if (configCls == null) {
       return null;
     }
     DispatcherServlet dispatcherServlet = getDispacher(bnd);
@@ -321,26 +307,17 @@ public class SpringMvcConfigurationManagerImpl implements SpringMvcConfiguration
       rootCtx.setResourceLoader(resLoader);
       rootCtx.getBeanFactory()
           .registerSingleton(SpringMvcConstants.BUNDLE_CONTEXT, bnd.getBundleContext());
-      if (configCls != null) {
-        log.info("Loading spring root context configuration classes for {} .....", rootContextName);
-        AnnotatedBeanDefinitionReader annotatedBeanDefinitionReader =
-            new AnnotatedBeanDefinitionReader(rootCtx);
-        String[] cfgs = configCls.split(",");
-        Arrays.stream(cfgs).forEach(c -> {
-          try {
-            annotatedBeanDefinitionReader.register(bnd.loadClass(c.trim()));
-          } catch (Exception e) {
-            log.error("Failed to load {}", c, e);
-          }
-        });
-      }
-      if (xmlCfgs != null) {
-        log.info("Loading spring root context xml configuration files for {} .....",
-            rootContextName);
-        XmlBeanDefinitionReader xmlBeanDefinitionReader = new XmlBeanDefinitionReader(rootCtx);
-        String[] xmls = xmlCfgs.split(",");
-        xmlBeanDefinitionReader.loadBeanDefinitions(xmls);
-      }
+      log.info("Loading spring root context configuration classes for {} .....", rootContextName);
+      AnnotatedBeanDefinitionReader annotatedBeanDefinitionReader =
+          new AnnotatedBeanDefinitionReader(rootCtx);
+      String[] cfgs = configCls.split(",");
+      Arrays.stream(cfgs).forEach(c -> {
+        try {
+          annotatedBeanDefinitionReader.register(bnd.loadClass(c.trim()));
+        } catch (Exception e) {
+          log.error("Failed to load {}", c, e);
+        }
+      });
     } else {
       log.info("Spring Root Context {} is already running.", getSpringContextName(bnd));
     }
