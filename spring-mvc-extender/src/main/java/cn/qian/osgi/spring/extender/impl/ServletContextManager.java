@@ -84,6 +84,7 @@ public class ServletContextManager
           executor.execute(jobs.take().getValue());
         } catch (InterruptedException e) {
           interrupted = true;
+          Thread.currentThread().interrupt();
         }
       }
     }, ServletContextManager.class.getPackage().getName() + "-jobs");
