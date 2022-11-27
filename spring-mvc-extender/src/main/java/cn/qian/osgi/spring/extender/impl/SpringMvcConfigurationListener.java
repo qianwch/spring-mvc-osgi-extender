@@ -42,6 +42,8 @@ public class SpringMvcConfigurationListener implements SynchronousBundleListener
       case BundleEvent.STOPPING:
         springMvcConfigurationManager.destroySpringMvcConfig(bundleEvent.getBundle());
         break;
+      default:
+        break;
     }
   }
 }
