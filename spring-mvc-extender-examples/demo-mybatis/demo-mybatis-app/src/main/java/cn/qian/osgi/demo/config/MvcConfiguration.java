@@ -23,12 +23,9 @@ import org.thymeleaf.templatemode.TemplateMode;
 @MapperScan(basePackages = "cn.qian.osgi.demo.model", annotationClass = Component.class)
 public class MvcConfiguration {
 
-  private ConfigurableApplicationContext ctx;
-
   @Bean
   public MappingJackson2HttpMessageConverter jsonConfig() {
-    MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-    return converter;
+    return new MappingJackson2HttpMessageConverter();
   }
 
   @Bean

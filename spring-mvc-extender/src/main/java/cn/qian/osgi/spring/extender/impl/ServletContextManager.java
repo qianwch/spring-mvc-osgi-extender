@@ -212,13 +212,13 @@ public class ServletContextManager
       httpWhiteBoardCtx = bndCtx;
     }
     //Move the tasks from waiting queue to running queue
-    if (servletContextTaskQs.get(contextPath) != null) {
-      jobs.addAll(servletContextTaskQs.get(contextPath)
+    List<Runnable> tasks = servletContextTaskQs.remove(contextPath);
+    if (tasks != null) {
+      jobs.addAll(tasks
         .stream()
         .map((r) -> new SimpleEntry<>(contextPath, r))
         .collect(Collectors.toList()));
-      servletContextTaskQs.get(contextPath).clear();
-      servletContextTaskQs.remove(contextPath);
+      tasks.clear();
     }
     return servletContext;
   }

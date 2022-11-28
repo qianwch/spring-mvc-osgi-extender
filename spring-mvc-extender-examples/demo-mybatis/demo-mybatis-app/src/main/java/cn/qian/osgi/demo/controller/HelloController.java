@@ -2,6 +2,7 @@ package cn.qian.osgi.demo.controller;
 
 import cn.qian.osgi.demo.model.HelloMsg;
 import cn.qian.osgi.demo.model.HelloMsgMapper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -38,8 +39,7 @@ public class HelloController implements InitializingBean {
     HelloMsg msg = new HelloMsg();
     msg.setId(id);
     msgMapper.deleteMsg(msg);
-    ModelAndView view = new ModelAndView("redirect:/hello");
-    return view;
+    return new ModelAndView("redirect:/hello");
   }
 
 
@@ -50,6 +50,7 @@ public class HelloController implements InitializingBean {
     return mv;
   }
 
+  @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
   public void init() {
     try (Connection conn = ds.getConnection()) {
       ResultSet rs = conn.getMetaData().getTables(null, null, "HELLO_MSG", new String[] {"TABLE"});
