@@ -18,6 +18,7 @@ package cn.qian.osgi.spring.extender.impl;
 
 import cn.qian.osgi.spring.extender.api.SpringMvcConfigurationManager;
 import cn.qian.osgi.spring.extender.api.SpringMvcConstants;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +63,7 @@ import static org.osgi.service.http.whiteboard.HttpWhiteboardConstants.HTTP_WHIT
 import static org.osgi.service.http.whiteboard.HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_PATTERN;
 
 @SuppressWarnings({"unchecked", "SpellCheckingInspection"})
+@SuppressFBWarnings("EI_EXPOSE_REP2")
 public class SpringMvcConfigurationManagerImpl implements SpringMvcConfigurationManager {
   private static final Logger log =
       LoggerFactory.getLogger(SpringMvcConfigurationManagerImpl.class);

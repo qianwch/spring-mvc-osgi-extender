@@ -28,11 +28,8 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @ComponentScan(basePackages = "cn.qian.osgi.demo1")
 public class MvcConfiguration {
 
-  private ConfigurableApplicationContext ctx;
-
   @Bean
   public MappingJackson2HttpMessageConverter jsonConfig() {
-    MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-    return converter;
+    return new MappingJackson2HttpMessageConverter();
   }
 }

@@ -29,7 +29,6 @@ import org.osgi.util.tracker.ServiceTracker;
 public class Activator implements BundleActivator {
   private SpringMvcConfigurationListener configurationListener;
   private ServletContextManager servletContextManager;
-  private SpringMvcConfigurationManager springMvcConfigurationManager;
   private ServiceTracker<ServletContext, ServletContext> serviceTracker;
 
   @Override
@@ -37,7 +36,7 @@ public class Activator implements BundleActivator {
     servletContextManager = new ServletContextManager(bundleContext);
     serviceTracker = new ServiceTracker<>(bundleContext, ServletContext.class, servletContextManager);
     serviceTracker.open();
-    springMvcConfigurationManager =
+    SpringMvcConfigurationManager springMvcConfigurationManager =
         new SpringMvcConfigurationManagerImpl(bundleContext, servletContextManager);
     bundleContext.registerService(SpringMvcConfigurationManager.class, springMvcConfigurationManager,
         new Hashtable<>());
@@ -57,7 +56,6 @@ public class Activator implements BundleActivator {
       servletContextManager.shutdown();
       servletContextManager = null;
     }
-    springMvcConfigurationManager = null;
     if (serviceTracker != null) {
       serviceTracker.close();
       serviceTracker = null;

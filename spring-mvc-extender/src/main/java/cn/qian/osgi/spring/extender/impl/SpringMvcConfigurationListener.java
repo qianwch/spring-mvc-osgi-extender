@@ -17,9 +17,11 @@
 package cn.qian.osgi.spring.extender.impl;
 
 import cn.qian.osgi.spring.extender.api.SpringMvcConfigurationManager;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.SynchronousBundleListener;
 
+@SuppressFBWarnings("EI_EXPOSE_REP2")
 public class SpringMvcConfigurationListener implements SynchronousBundleListener {
   private final SpringMvcConfigurationManager springMvcConfigurationManager;
   private final ServletContextManager servletContextManager;
